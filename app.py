@@ -20,9 +20,12 @@ def main(arguments, logger):
     """Main function of the 'Update Godaddy DNS' script"""
     try:
         
+        
+        record_type = 'A'
         key = arguments.key
         secret = arguments.secret
-        hostname = arguments.hostname
+        domainname = arguments.domainname
+        record_names = arguments.record_names
         
         external_ip = get_external_ip(logger)
         if not external_ip:
@@ -31,8 +34,15 @@ def main(arguments, logger):
         else:
             logger.info("External IP Adress found: '{}'".format(external_ip))
 
-        result = update_dns_a_record(domain=hostname, ip_address=external_ip, api_key=key, api_secret=secret, logger=logger)
-        logger.info('Update DNS record result: {}'.format(result))
+        logger.info("Updating domainname : '{}'".format(domainname))
+        logger.info("Updating DNS records of type : '{}'".format(record_type))
+        logger.info("Updating DNS records names : '{}'".format(record_names))
+
+        records = [x.strip() for x in record_names.split(",")]
+        for record_name in records:
+            result = update_dns_record(domain=domainname, record_type=record_type, record_name=record_name, ip_address=external_ip, api_key=key, api_secret=secret, logger=logger)
+            
+
         
     except Exception as e:
         logger.error("DNS record update failed with unexpected error!: {0}".format(traceback.format_exc()))
@@ -66,25 +76,23 @@ def retry_request_unless(request, retry_unless, sleep_between_retries, max_retry
 
     return response
 
-def update_dns_a_record(domain, ip_address, api_key, api_secret, logger):
+def update_dns_record(domain, record_type, record_name, ip_address, api_key, api_secret, logger):
     
     userAccount = Account(api_key=api_key, api_secret=api_secret)
     userClient = Client(userAccount)
 
-    record_type = 'A'
-    records_of_type_a = userClient.get_records(domain, record_type=record_type)
+    records = userClient.get_records(domain, record_type=record_type, name=record_name)
     
     # dudes = [x["name"] for x in records_of_type_a]
     
-    if not records_of_type_a:
-        logger.error("No {} record found to update".format(record_type))
+    if not records:
+        logger.error("No {} / {} record found to update.".format(record_type, record_name))
         return
 
-    for a_record in records_of_type_a:
-        logger.info("Updating record with name '{}'".format(a_record["name"]))
-        result = userClient.update_record_ip(ip_address, domain, name=a_record["name"], record_type=record_type)
-
-        logger.info("Updated with result : {}".format(result))
+    for record in records:
+        logger.info("Updating record with name '{}'".format(record["name"]))
+        result = userClient.update_record_ip(ip_address, domain, name=record["name"], record_type=record_type)
+        logger.info("Updated '{}' with result : {}".format(record["name"], result))
 
 def setupLogging(logDirectory, logfilename, verbose,loggername=__name__):
     """
@@ -126,9 +134,10 @@ if __name__  == '__main__':
     """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--hostname", help="The hostname for wich to set the 'A' value.", required=False)
-    parser.add_argument("--key", help="The KEY to the GoDaddy account.", required=False)
-    parser.add_argument("--secret", help="The SECRET to the GoDaddy account.", required=False)
+    parser.add_argument("--domainname", help="The domainname for which to update the records.", required=True)
+    parser.add_argument("--record_names", help="A collection(comma separated string) of record names to set.", required=True)
+    parser.add_argument("--key", help="The KEY to the GoDaddy account.", required=True)
+    parser.add_argument("--secret", help="The SECRET to the GoDaddy account.", required=True)
     parser.add_argument("--verbose", dest='verbose', help="Specify to enable verbose logging", action='store_true')
     parser.set_defaults(verbose=False)
 
