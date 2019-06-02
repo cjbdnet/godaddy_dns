@@ -9,3 +9,17 @@ stages:
   steps:
   - applyYamlConfig:
       path: ./deployment.yaml
+    envFrom:
+    - sourceName: s-8q2j5
+      sourceKey: godaddy-api-key
+      targetKey: API_KEY
+    - sourceName: s-ln9c4
+      sourceKey: godaddy-api-secret
+      targetKey: API_SECRET
+    - sourceName: s-lxlvl
+      sourceKey: DOMAIN_NAME
+      targetKey: DOMAIN_NAME
+    - sourceName: s-shkdc
+      sourceKey: RECORD_NAMES
+      targetKey: RECORD_NAMES
+notification: {}
