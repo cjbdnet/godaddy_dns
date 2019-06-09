@@ -31,8 +31,23 @@ def main(arguments, logger):
         if not external_ip:
             logger.error("Invalid external IP Adress found: '{}'. Exiting...")
             return
+        
+        logger.info("External IP Adress found: '{}'".format(external_ip))
+        state_file_name = "external_ip_address.state"
+        if not (os.path.exists(state_file_name)):
+            logger.info("No state stored. Creating state file '{}'.".format(state_file_name))
+            with open(state_file_name, 'x') as state_file:
+                state_file.write(external_ip)
+                logger.info("Stored external ip '{}'.".format(external_ip))
         else:
-            logger.info("External IP Adress found: '{}'".format(external_ip))
+            with open(state_file_name, 'r+') as state:
+                previous_external_address = state.read()
+                if(previous_external_address == external_ip):
+                    logger.info("Nothing to update. The Ip address has not changed from previous run. Exiting...")
+                    return
+                else:
+                    state.write(external_ip)
+                    logger.info("Stored external ip '{}'.".format(external_ip))
 
         logger.info("Updating domainname : '{}'".format(domainname))
         logger.info("Updating DNS records of type : '{}'".format(record_type))
