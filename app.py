@@ -33,14 +33,20 @@ def main(arguments, logger):
             return
         
         logger.info("External IP Adress found: '{}'".format(external_ip))
-        state_file_name = "external_ip_address.state"
-        if not (os.path.exists(state_file_name)):
-            logger.info("No state stored. Creating state file '{}'.".format(state_file_name))
-            with open(state_file_name, 'x') as state_file:
+
+        state_directory_name = "godaddy_dns_updater"
+        if not (os.path.exists(state_directory_name)):
+            logger.info("State directory does not exist, creating it...")
+            os.makedirs(state_directory_name)
+
+        state_file_path = "{}/external_ip_address.state".format(state_directory_name)
+        if not (os.path.exists(state_file_path)):
+            logger.info("No state stored. Creating state file '{}'.".format(state_file_path))
+            with open(state_file_path, 'x') as state_file:
                 state_file.write(external_ip)
                 logger.info("Stored external ip '{}'.".format(external_ip))
         else:
-            with open(state_file_name, 'r+') as state:
+            with open(state_file_path, 'r+') as state:
                 previous_external_address = state.read()
                 if(previous_external_address == external_ip):
                     logger.info("Nothing to update. The Ip address has not changed from previous run. Exiting...")
